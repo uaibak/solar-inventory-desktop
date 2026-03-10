@@ -31,12 +31,7 @@ function Reports() {
     { id: 'inventory', label: 'Inventory Report', icon: '📦' },
     { id: 'financial', label: 'Financial Summary', icon: '📊' },
   ];
-  const searchPlaceholderByTab = {
-    sales: 'Search by customer, date, payment, amount...',
-    purchases: 'Search by supplier, date, amount...',
-    inventory: 'Search by product, category, supplier...',
-    financial: 'Search by totals or averages...'
-  };
+  const searchPlaceholder = 'Search records...';
 
   const fetchReportData = useCallback(async () => {
     setLoading(true);
@@ -184,12 +179,30 @@ function Reports() {
   const convertToCSV = (data) => {
     if (data.length === 0) return '';
 
+    const normalizeCsvValue = (value, header) => {
+      if (value === null || value === undefined) return '';
+
+      // Normalize date-like fields for CSV parsing (YYYY-MM-DD)
+      const headerLooksLikeDate = typeof header === 'string' && header.toLowerCase().includes('date');
+      if (value instanceof Date) {
+        return value.toISOString().slice(0, 10);
+      }
+      if (headerLooksLikeDate && typeof value === 'string') {
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) {
+          return parsed.toISOString().slice(0, 10);
+        }
+      }
+
+      return value;
+    };
+
     const headers = Object.keys(data[0]);
     const csvRows = [
       headers.join(','),
       ...data.map(row =>
         headers.map(header => {
-          const value = row[header];
+          const value = normalizeCsvValue(row[header], header);
           // Escape commas and quotes in CSV
           if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
             return `"${value.replace(/"/g, '""')}"`;
@@ -327,7 +340,7 @@ function Reports() {
         showCategory={activeTab === 'inventory'}
         showSupplier={activeTab === 'purchases' || activeTab === 'inventory'}
         showSearch={true}
-        searchPlaceholder={searchPlaceholderByTab[activeTab] || 'Search records...'}
+        searchPlaceholder={searchPlaceholder}
         searchHelpText="Tip: use customer, supplier, product names or amounts"
       />
 

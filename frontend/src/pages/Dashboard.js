@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { LoadingSpinner, LoadingCard } from '../components/Loading';
+import { LoadingCard } from '../components/Loading';
 import { useToast } from '../components/Toast';
 
 function Dashboard() {
@@ -19,11 +19,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const { error } = useToast();
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const [
         productsRes,
@@ -65,13 +61,6 @@ function Dashboard() {
       const activeSuppliers = suppliers.length;
       const activeCustomers = customers.length;
 
-      // Calculate top products by sales
-      const productSales = {};
-      sales.forEach(sale => {
-        // Assuming sales have items, but for now using basic calculation
-        // This would need to be enhanced with actual sale items data
-      });
-
       setStats({
         totalProducts,
         todaySales,
@@ -91,7 +80,11 @@ function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const StatCard = ({ title, value, icon, color, subtitle, trend }) => (
     <div className={`glass-card p-6 ${color} transform hover:scale-105 transition-all duration-300 cursor-pointer group`}>
