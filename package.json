@@ -1,0 +1,46 @@
+{
+  "name": "solar-inventory-desktop",
+  "version": "1.0.0",
+  "description": "Desktop inventory management system for solar equipment store",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "npm run build:frontend && npm run build:electron",
+    "build:frontend": "cd frontend && npm run build",
+    "build:electron": "electron-builder",
+    "dist": "npm run build && npm run build:electron"
+  },
+  "dependencies": {
+    "electron": "^25.0.0",
+    "concurrently": "^7.6.0",
+    "wait-on": "^7.0.1"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.solarinventory.desktop",
+    "productName": "Solar Inventory Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "backend/**/*",
+      "frontend/build/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
