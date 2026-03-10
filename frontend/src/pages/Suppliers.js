@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { LoadingSpinner } from '../components/Loading';
 
 function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
@@ -15,36 +17,45 @@ function Suppliers() {
     email: '',
     address: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { success, error } = useToast();
 
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
-
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = useCallback(async () => {
     try {
       const response = await api.get('/suppliers');
       setSuppliers(response.data);
-    } catch (error) {
-      console.error('Error fetching suppliers:', error);
+    } catch (err) {
+      console.error('Error fetching suppliers:', err);
+      error('Failed to load suppliers');
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       if (editingSupplier) {
         await api.put(`/suppliers/${editingSupplier.id}`, formData);
+        success('Supplier updated successfully');
       } else {
         await api.post('/suppliers', formData);
+        success('Supplier added successfully');
       }
       fetchSuppliers();
       setShowForm(false);
       setEditingSupplier(null);
       resetForm();
-    } catch (error) {
-      console.error('Error saving supplier:', error);
+    } catch (err) {
+      console.error('Error saving supplier:', err);
+      error('Failed to save supplier');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -64,9 +75,11 @@ function Suppliers() {
     if (window.confirm('Are you sure you want to delete this supplier?')) {
       try {
         await api.delete(`/suppliers/${id}`);
+        success('Supplier deleted successfully');
         fetchSuppliers();
-      } catch (error) {
-        console.error('Error deleting supplier:', error);
+      } catch (err) {
+        console.error('Error deleting supplier:', err);
+        error('Failed to delete supplier');
       }
     }
   };
@@ -188,48 +201,48 @@ function Suppliers() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Name *</label>
                     <input
                       type="text"
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Company</label>
+                    <label className="block text-sm font-medium text-gray-700">Company (optional)</label>
                     <input
                       type="text"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.company}
                       onChange={(e) => setFormData({...formData, company: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700">Phone (optional)</label>
                     <input
                       type="tel"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
                     <input
                       type="email"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
+                  <label className="block text-sm font-medium text-gray-700">Address (optional)</label>
                   <textarea
                     rows="3"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     value={formData.address}
                     onChange={(e) => setFormData({...formData, address: e.target.value})}
                   />
@@ -244,8 +257,10 @@ function Suppliers() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={submitting}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
+                    {submitting && <LoadingSpinner size="sm" className="mr-2" />}
                     {editingSupplier ? 'Update' : 'Create'}
                   </button>
                 </div>

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { LoadingSpinner } from '../components/Loading';
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -12,36 +14,45 @@ function Customers() {
     email: '',
     address: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { success, error } = useToast();
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await api.get('/customers');
       setCustomers(response.data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      error('Failed to load customers');
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       if (editingCustomer) {
         await api.put(`/customers/${editingCustomer.id}`, formData);
+        success('Customer updated successfully');
       } else {
         await api.post('/customers', formData);
+        success('Customer added successfully');
       }
       fetchCustomers();
       setShowForm(false);
       setEditingCustomer(null);
       resetForm();
-    } catch (error) {
-      console.error('Error saving customer:', error);
+    } catch (err) {
+      console.error('Error saving customer:', err);
+      error('Failed to save customer');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -60,9 +71,11 @@ function Customers() {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
         await api.delete(`/customers/${id}`);
+        success('Customer deleted successfully');
         fetchCustomers();
-      } catch (error) {
-        console.error('Error deleting customer:', error);
+      } catch (err) {
+        console.error('Error deleting customer:', err);
+        error('Failed to delete customer');
       }
     }
   };
@@ -158,40 +171,40 @@ function Customers() {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <label className="block text-sm font-medium text-gray-700">Name *</label>
                   <input
                     type="text"
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700">Phone (optional)</label>
                     <input
                       type="tel"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
                     <input
                       type="email"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
+                  <label className="block text-sm font-medium text-gray-700">Address (optional)</label>
                   <textarea
                     rows="3"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     value={formData.address}
                     onChange={(e) => setFormData({...formData, address: e.target.value})}
                   />
@@ -206,8 +219,10 @@ function Customers() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={submitting}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
+                    {submitting && <LoadingSpinner size="sm" className="mr-2" />}
                     {editingCustomer ? 'Update' : 'Create'}
                   </button>
                 </div>

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { LoadingSpinner } from '../components/Loading';
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -21,12 +23,10 @@ function Products() {
     stock_quantity: '',
     minimum_stock: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { success, error } = useToast();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [productsRes, categoriesRes, suppliersRes] = await Promise.all([
         api.get('/products'),
@@ -36,27 +36,50 @@ function Products() {
       setProducts(productsRes.data);
       setCategories(categoriesRes.data);
       setSuppliers(suppliersRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      error('Failed to load products data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
+      // Prepare form data, converting empty strings to null for optional fields
+      const submitData = {
+        ...formData,
+        watt_capacity: formData.watt_capacity === '' ? null : parseInt(formData.watt_capacity) || null,
+        category_id: formData.category_id === '' ? null : formData.category_id,
+        supplier_id: formData.supplier_id === '' ? null : formData.supplier_id,
+        purchase_price: formData.purchase_price === '' ? null : parseFloat(formData.purchase_price) || null,
+        sale_price: formData.sale_price === '' ? null : parseFloat(formData.sale_price) || null,
+        stock_quantity: formData.stock_quantity === '' ? 0 : parseInt(formData.stock_quantity) || 0,
+        minimum_stock: formData.minimum_stock === '' ? 0 : parseInt(formData.minimum_stock) || 0,
+      };
+
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.id}`, formData);
+        await api.put(`/products/${editingProduct.id}`, submitData);
+        success('Product updated successfully');
       } else {
-        await api.post('/products', formData);
+        await api.post('/products', submitData);
+        success('Product added successfully');
       }
       fetchData();
       setShowForm(false);
       setEditingProduct(null);
       resetForm();
-    } catch (error) {
-      console.error('Error saving product:', error);
+    } catch (err) {
+      console.error('Error saving product:', err);
+      error('Failed to save product');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -82,9 +105,11 @@ function Products() {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await api.delete(`/products/${id}`);
+        success('Product deleted successfully');
         fetchData();
-      } catch (error) {
-        console.error('Error deleting product:', error);
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        error('Failed to delete product');
       }
     }
   };
@@ -208,46 +233,46 @@ function Products() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Name *</label>
                     <input
                       type="text"
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Brand</label>
+                    <label className="block text-sm font-medium text-gray-700">Brand (optional)</label>
                     <input
                       type="text"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.brand}
                       onChange={(e) => setFormData({...formData, brand: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Model</label>
+                    <label className="block text-sm font-medium text-gray-700">Model (optional)</label>
                     <input
                       type="text"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.model}
                       onChange={(e) => setFormData({...formData, model: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Watt Capacity</label>
+                    <label className="block text-sm font-medium text-gray-700">Watt Capacity (optional)</label>
                     <input
                       type="number"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.watt_capacity}
                       onChange={(e) => setFormData({...formData, watt_capacity: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <label className="block text-sm font-medium text-gray-700">Category (optional)</label>
                     <select
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.category_id}
                       onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                     >
@@ -258,9 +283,9 @@ function Products() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Supplier</label>
+                    <label className="block text-sm font-medium text-gray-700">Supplier (optional)</label>
                     <select
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.supplier_id}
                       onChange={(e) => setFormData({...formData, supplier_id: e.target.value})}
                     >
@@ -271,52 +296,48 @@ function Products() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Barcode</label>
+                    <label className="block text-sm font-medium text-gray-700">Barcode (optional)</label>
                     <input
                       type="text"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.barcode}
                       onChange={(e) => setFormData({...formData, barcode: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Purchase Price</label>
+                    <label className="block text-sm font-medium text-gray-700">Purchase Price (optional)</label>
                     <input
                       type="number"
                       step="0.01"
-                      required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.purchase_price}
                       onChange={(e) => setFormData({...formData, purchase_price: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Sale Price</label>
+                    <label className="block text-sm font-medium text-gray-700">Sale Price (optional)</label>
                     <input
                       type="number"
                       step="0.01"
-                      required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.sale_price}
                       onChange={(e) => setFormData({...formData, sale_price: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
+                    <label className="block text-sm font-medium text-gray-700">Stock Quantity (optional)</label>
                     <input
                       type="number"
-                      required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.stock_quantity}
                       onChange={(e) => setFormData({...formData, stock_quantity: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Minimum Stock</label>
+                    <label className="block text-sm font-medium text-gray-700">Minimum Stock (optional)</label>
                     <input
                       type="number"
-                      required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.minimum_stock}
                       onChange={(e) => setFormData({...formData, minimum_stock: e.target.value})}
                     />
@@ -332,8 +353,10 @@ function Products() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={submitting}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
+                    {submitting && <LoadingSpinner size="sm" className="mr-2" />}
                     {editingProduct ? 'Update' : 'Create'}
                   </button>
                 </div>

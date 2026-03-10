@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
+import { LoadingSpinner } from '../components/Loading';
 
 function Categories() {
   const [categories, setCategories] = useState([]);
@@ -10,36 +12,45 @@ function Categories() {
     name: '',
     description: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const { success, error } = useToast();
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await api.get('/categories');
       setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      error('Failed to load categories');
     } finally {
       setLoading(false);
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       if (editingCategory) {
         await api.put(`/categories/${editingCategory.id}`, formData);
+        success('Category updated successfully');
       } else {
         await api.post('/categories', formData);
+        success('Category added successfully');
       }
       fetchCategories();
       setShowForm(false);
       setEditingCategory(null);
       resetForm();
-    } catch (error) {
-      console.error('Error saving category:', error);
+    } catch (err) {
+      console.error('Error saving category:', err);
+      error('Failed to save category');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -56,9 +67,11 @@ function Categories() {
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
         await api.delete(`/categories/${id}`);
+        success('Category deleted successfully');
         fetchCategories();
-      } catch (error) {
-        console.error('Error deleting category:', error);
+      } catch (err) {
+        console.error('Error deleting category:', err);
+        error('Failed to delete category');
       }
     }
   };
@@ -124,20 +137,20 @@ function Categories() {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <label className="block text-sm font-medium text-gray-700">Name *</label>
                   <input
                     type="text"
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <label className="block text-sm font-medium text-gray-700">Description (optional)</label>
                   <textarea
                     rows="3"
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                   />
@@ -152,8 +165,10 @@ function Categories() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    disabled={submitting}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
+                    {submitting && <LoadingSpinner size="sm" className="mr-2" />}
                     {editingCategory ? 'Update' : 'Create'}
                   </button>
                 </div>

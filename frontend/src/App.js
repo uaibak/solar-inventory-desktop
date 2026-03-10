@@ -1,43 +1,47 @@
-import React, { useContext } from 'react';
+import React, { useContext, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
+import { ToastProvider } from './components/Toast';
+import { PageLoading } from './components/Loading';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Products from './pages/Products';
-import Categories from './pages/Categories';
-import Suppliers from './pages/Suppliers';
-import Customers from './pages/Customers';
-import Purchases from './pages/Purchases';
-import Sales from './pages/Sales';
-import Reports from './pages/Reports';
 import Layout from './layouts/Layout';
+
+// Lazy load components for better performance
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Products = lazy(() => import('./pages/Products'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Purchases = lazy(() => import('./pages/Purchases'));
+const Sales = lazy(() => import('./pages/Sales'));
+const Reports = lazy(() => import('./pages/Reports'));
 
 function AppContent() {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
+    return <PageLoading message="Initializing application..." />;
   }
 
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-        <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
-          <Route index element={<Dashboard />} />
-          <Route path="products" element={<Products />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="suppliers" element={<Suppliers />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="purchases" element={<Purchases />} />
-          <Route path="sales" element={<Sales />} />
-          <Route path="reports" element={<Reports />} />
-        </Route>
-      </Routes>
+      <div className="fade-in">
+        <Suspense fallback={<PageLoading message="Loading page..." />}>
+          <Routes>
+            <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+            <Route path="/" element={user ? <Layout /> : <Navigate to="/login" />}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<Products />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="suppliers" element={<Suppliers />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="purchases" element={<Purchases />} />
+              <Route path="sales" element={<Sales />} />
+              <Route path="reports" element={<Reports />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </div>
     </Router>
   );
 }
@@ -45,7 +49,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 }

@@ -48,7 +48,8 @@ function Purchases() {
     updatedItems[index][field] = value;
 
     if (field === 'product_id' || field === 'quantity' || field === 'price') {
-      const product = products.find(p => p.id == updatedItems[index].product_id);
+      const productId = Number(updatedItems[index].product_id);
+      const product = products.find(p => p.id === productId);
       if (product && updatedItems[index].quantity && updatedItems[index].price) {
         updatedItems[index].subtotal = updatedItems[index].quantity * updatedItems[index].price;
       }
@@ -159,10 +160,10 @@ function Purchases() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Supplier</label>
+                    <label className="block text-sm font-medium text-gray-700">Supplier *</label>
                     <select
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.supplier_id}
                       onChange={(e) => setFormData({...formData, supplier_id: e.target.value})}
                     >
@@ -173,11 +174,11 @@ function Purchases() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Purchase Date</label>
+                    <label className="block text-sm font-medium text-gray-700">Purchase Date *</label>
                     <input
                       type="date"
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.purchase_date}
                       onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
                     />
@@ -186,7 +187,7 @@ function Purchases() {
 
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-md font-medium text-gray-900">Purchase Items</h4>
+                    <h4 className="text-md font-medium text-gray-900">Purchase Items *</h4>
                     <button
                       type="button"
                       onClick={addPurchaseItem}
@@ -201,11 +202,11 @@ function Purchases() {
                       <div key={index} className="flex items-center space-x-2 p-3 border rounded">
                         <select
                           required
-                          className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="flex-1 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.product_id}
                           onChange={(e) => updatePurchaseItem(index, 'product_id', e.target.value)}
                         >
-                          <option value="">Select Product</option>
+                        <option value="">Select Product *</option>
                           {products.map(product => (
                             <option key={product.id} value={product.id}>{product.name}</option>
                           ))}
@@ -215,7 +216,7 @@ function Purchases() {
                           min="1"
                           required
                           placeholder="Qty"
-                          className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="w-20 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.quantity}
                           onChange={(e) => updatePurchaseItem(index, 'quantity', e.target.value)}
                         />
@@ -225,7 +226,7 @@ function Purchases() {
                           min="0"
                           required
                           placeholder="Price"
-                          className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="w-24 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.price}
                           onChange={(e) => updatePurchaseItem(index, 'price', e.target.value)}
                         />

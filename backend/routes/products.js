@@ -8,12 +8,12 @@ const validateProduct = [
   body('name').notEmpty().trim(),
   body('brand').optional(),
   body('model').optional(),
-  body('watt_capacity').optional().isInt({ min: 0 }),
-  body('category_id').optional().isInt(),
-  body('supplier_id').optional().isInt(),
+  body('watt_capacity').optional({ nullable: true, checkFalsy: true }).isInt({ min: 0 }),
+  body('category_id').optional({ nullable: true, checkFalsy: true }).isInt(),
+  body('supplier_id').optional({ nullable: true, checkFalsy: true }).isInt(),
   body('barcode').optional(),
-  body('purchase_price').isFloat({ min: 0 }),
-  body('sale_price').isFloat({ min: 0 }),
+  body('purchase_price').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }),
+  body('sale_price').optional({ nullable: true, checkFalsy: true }).isFloat({ min: 0 }),
   body('stock_quantity').optional().isInt({ min: 0 }),
   body('minimum_stock').optional().isInt({ min: 0 })
 ];

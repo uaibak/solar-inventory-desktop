@@ -49,7 +49,8 @@ function Sales() {
     updatedItems[index][field] = value;
 
     if (field === 'product_id') {
-      const product = products.find(p => p.id == value);
+      const productId = Number(value);
+      const product = products.find(p => p.id === productId);
       if (product) {
         updatedItems[index].price = product.sale_price;
         updatedItems[index].subtotal = updatedItems[index].quantity * product.sale_price;
@@ -186,9 +187,9 @@ function Sales() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Customer (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700">Customer (optional)</label>
                     <select
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.customer_id}
                       onChange={(e) => setFormData({...formData, customer_id: e.target.value})}
                     >
@@ -199,10 +200,10 @@ function Sales() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                    <label className="block text-sm font-medium text-gray-700">Payment Method *</label>
                     <select
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.payment_method}
                       onChange={(e) => setFormData({...formData, payment_method: e.target.value})}
                     >
@@ -212,11 +213,11 @@ function Sales() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Sale Date</label>
+                    <label className="block text-sm font-medium text-gray-700">Sale Date *</label>
                     <input
                       type="date"
                       required
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={formData.sale_date}
                       onChange={(e) => setFormData({...formData, sale_date: e.target.value})}
                     />
@@ -225,7 +226,7 @@ function Sales() {
 
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-md font-medium text-gray-900">Sale Items</h4>
+                    <h4 className="text-md font-medium text-gray-900">Sale Items *</h4>
                     <button
                       type="button"
                       onClick={addSaleItem}
@@ -240,11 +241,11 @@ function Sales() {
                       <div key={index} className="flex items-center space-x-2 p-3 border rounded">
                         <select
                           required
-                          className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="flex-1 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.product_id}
                           onChange={(e) => updateSaleItem(index, 'product_id', e.target.value)}
                         >
-                          <option value="">Select Product</option>
+                          <option value="">Select Product *</option>
                           {products.filter(p => p.stock_quantity > 0).map(product => (
                             <option key={product.id} value={product.id}>
                               {product.name} (Stock: {product.stock_quantity})
@@ -256,7 +257,7 @@ function Sales() {
                           min="1"
                           required
                           placeholder="Qty"
-                          className="w-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="w-20 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.quantity}
                           onChange={(e) => updateSaleItem(index, 'quantity', e.target.value)}
                         />
@@ -266,7 +267,7 @@ function Sales() {
                           min="0"
                           required
                           placeholder="Price"
-                          className="w-24 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          className="w-24 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                           value={item.price}
                           onChange={(e) => updateSaleItem(index, 'price', e.target.value)}
                         />

@@ -4,8 +4,8 @@
   "description": "Desktop inventory management system for solar equipment store",
   "main": "electron/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && electron .\"",
+    "start": "electron . --disable-gpu --no-sandbox",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && electron . --disable-gpu --no-sandbox\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm start",
     "build": "npm run build:frontend && npm run build:electron",
