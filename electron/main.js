@@ -80,6 +80,13 @@ ipcMain.handle('print-to-pdf', async (event, content) => {
 
       const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
       await pdfWindow.loadURL(dataUrl);
+      await new Promise((resolve) => {
+        if (pdfWindow.webContents.isLoading()) {
+          pdfWindow.webContents.once('did-finish-load', resolve);
+        } else {
+          resolve();
+        }
+      });
       await pdfWindow.webContents.executeJavaScript('document.fonts && document.fonts.ready');
 
       const pdfBuffer = await pdfWindow.webContents.printToPDF({

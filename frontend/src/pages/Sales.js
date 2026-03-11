@@ -191,27 +191,35 @@ function Sales() {
     const html = buildInvoiceHtml(invoiceData);
     const defaultFileName = `invoice-${invoiceData.id}.pdf`;
 
-    if (window.electronAPI?.printToPDF) {
-      const result = await window.electronAPI.printToPDF({
-        html,
-        defaultFileName
-      });
-      if (!result?.success) {
-        error(result?.error || 'Failed to generate PDF');
-      } else {
-        success('Invoice PDF saved');
+    try {
+      if (window.electronAPI?.printToPDF) {
+        const result = await window.electronAPI.printToPDF({
+          html,
+          defaultFileName
+        });
+        if (!result?.success) {
+          error(result?.error || 'Failed to generate PDF');
+        } else {
+          success('Invoice PDF saved');
+        }
+        return;
       }
-      return;
-    }
 
-    // Fallback for browser mode
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      w.print();
-      w.close();
+      // Fallback for browser mode
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        w.print();
+        w.close();
+        success('Print dialog opened');
+      } else {
+        error('Popup blocked. Please allow popups to print.');
+      }
+    } catch (err) {
+      console.error('PDF download error:', err);
+      error('Failed to generate PDF');
     }
   };
 
