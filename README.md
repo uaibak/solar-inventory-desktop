@@ -8,6 +8,8 @@ Desktop inventory management system for solar equipment with a React frontend, E
 - Role-based auth (JWT)
 - Inventory, sales, purchases, suppliers, customers, categories
 - Reports with CSV/JSON export
+- Dashboard + reports optimized endpoints
+- Invoice view with PDF download (Electron)
 - Seeded sample data for quick testing
 
 ## Tech Stack
@@ -104,8 +106,12 @@ CRUD:
 - `/purchases`
 - `/sales`
 
+Dashboard:
+- `GET /dashboard`
+
 Reports:
 - `GET /reports?type=...&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`
+- `GET /reports/list?type=...&page=1&pageSize=10&search=&dateFrom=&dateTo=&category=&supplier=`
 
 Report types:
 - `daily_sales`
@@ -122,6 +128,7 @@ Database tools (admin only):
 ## Notes
 - Electron loads the React dev server in development. If ports 3000/3001 are in use, the app will not start correctly.
 - Settings screen is implemented but currently not linked in the router.
+- Invoice PDF download uses Electron’s `printToPDF` and requires Electron context (not just browser).
 
 ## Troubleshooting
 - Port conflicts: ensure 3000 and 3001 are free.
