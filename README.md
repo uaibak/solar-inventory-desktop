@@ -1,22 +1,33 @@
-ï»¿# Solar Inventory Desktop
+# Solar Inventory Desktop
 
-Desktop inventory management system for solar equipment with a React frontend, Express + SQLite backend, and Electron shell.
+A full-stack desktop inventory management system for a solar equipment store. It tracks products, categories, suppliers, customers, purchases, and sales with a modern React UI, local SQLite storage, and a bundled Electron shell.
 
-## Highlights
-- Electron desktop app with React UI
-- Express API with SQLite storage
-- Role-based auth (JWT)
-- Inventory, sales, purchases, suppliers, customers, categories
-- Reports with CSV/JSON export
-- Dashboard + reports optimized endpoints
-- Invoice view with PDF download (Electron)
-- Seeded sample data for quick testing
+## What This System Does
+- Manage inventory items and categories
+- Track purchases and supplier spend
+- Track sales, customers, and revenue
+- Generate reports with filters and CSV export
+- View dashboard KPIs with recent activity and top lists
+- Generate invoice PDF from sales (Electron)
+
+## Key Features
+- Desktop app (Electron) + local API (Express)
+- Local SQLite database with auto-create and seed
+- JWT authentication with role-based access
+- Dashboard summary with:
+  - Total products, sales, revenue, low stock
+  - Recent sales and purchases
+  - Top products (by revenue + units sold)
+  - Top customers (by sales revenue)
+  - Top suppliers (by purchase spend)
+- Reports with search, date filters, pagination, and export
+- CSV export uses ISO dates to parse cleanly in Excel
+- Invoice view and PDF download (Electron only)
 
 ## Tech Stack
-- Frontend: React, TailwindCSS
-- Backend: Node.js, Express
-- Database: SQLite (local file)
-- Desktop: Electron
+- Frontend: React 18, React Router, TailwindCSS, Chart.js
+- Backend: Node.js, Express, SQLite3
+- Desktop: Electron 25
 
 ## Project Structure
 ```
@@ -58,17 +69,17 @@ cd ..
 npm run dev
 ```
 This starts:
-- Backend API: http://localhost:3001
-- Frontend: http://localhost:3000
-- Electron app (loads the frontend URL)
+- Backend API: `http://localhost:3001`
+- Frontend UI: `http://localhost:3000`
+- Electron app (loads the frontend dev server)
 
 ## Run (Production)
 ```bash
 npm start
 ```
-Runs Electron directly. In production, the frontend should be built first.
+Runs Electron directly. In production, build the frontend first.
 
-## Build
+## Build & Package
 ```bash
 npm run build:frontend
 npm run build:electron
@@ -80,8 +91,8 @@ npm run dist
 Output goes to `dist/`.
 
 ## Default Login
-- Email: admin@solarinventory.com
-- Password: admin123
+- Email: `admin@solarinventory.com`
+- Password: `admin123`
 
 ## Database
 - Dev DB file: `data/inventory.db`
@@ -113,7 +124,7 @@ Reports:
 - `GET /reports?type=...&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`
 - `GET /reports/list?type=...&page=1&pageSize=10&search=&dateFrom=&dateTo=&category=&supplier=`
 
-Report types:
+Report Types:
 - `daily_sales`
 - `monthly_sales`
 - `inventory_stock`
@@ -125,14 +136,20 @@ Database tools (admin only):
 - `POST /database/clean`
 - `POST /database/seed`
 
-## Notes
-- Electron loads the React dev server in development. If ports 3000/3001 are in use, the app will not start correctly.
-- Settings screen is implemented but currently not linked in the router.
-- Invoice PDF download uses Electronâ€™s `printToPDF` and requires Electron context (not just browser).
+## Sample Data
+See `SAMPLE_DATA.md` for example CSV and datasets used for testing.
+
+## PDF Invoices
+Invoice PDF download uses Electron’s `printToPDF` API. It will not work in a plain browser tab. Use the Electron app for PDF export.
+
+## Performance Notes
+- SQLite is configured with WAL mode and indexes for dashboard and reports.
+- Reports list is server-side paginated for fast filtering and export.
 
 ## Troubleshooting
-- Port conflicts: ensure 3000 and 3001 are free.
+- Port conflicts: ensure `3000` and `3001` are free.
 - If the DB is corrupted, delete `data/inventory.db` and restart.
+- PDF export requires Electron; browser mode won’t download.
 
 ## License
 Boost Software License 1.0. See `LICENSE`.

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { LoadingCard } from '../components/Loading';
 import { useToast } from '../components/Toast';
@@ -16,18 +17,23 @@ function Dashboard() {
   const [recentSales, setRecentSales] = useState([]);
   const [recentPurchases, setRecentPurchases] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
+  const [topCustomers, setTopCustomers] = useState([]);
+  const [topSuppliers, setTopSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { error } = useToast();
+  const navigate = useNavigate();
 
   const fetchDashboardData = useCallback(async () => {
     try {
       const response = await api.get('/dashboard');
-      const { stats, recentSales, recentPurchases, topProducts } = response.data;
+      const { stats, recentSales, recentPurchases, topProducts, topCustomers, topSuppliers } = response.data;
 
       setStats(stats);
       setRecentSales(recentSales || []);
       setRecentPurchases(recentPurchases || []);
       setTopProducts(topProducts || []);
+      setTopCustomers(topCustomers || []);
+      setTopSuppliers(topSuppliers || []);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       error('Failed to load dashboard data');
@@ -118,7 +124,7 @@ function Dashboard() {
         <StatCard
           title="Total Products"
           value={stats.totalProducts}
-          icon="📦"
+          icon="INV"
           color="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
           subtitle="Active inventory items"
           trend={{ value: 12, positive: true }}
@@ -126,7 +132,7 @@ function Dashboard() {
         <StatCard
           title="Today's Sales"
           value={`PKR ${stats.todaySales.toLocaleString()}`}
-          icon="💰"
+          icon="SALE"
           color="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
           subtitle="Revenue today"
           trend={{ value: 8, positive: true }}
@@ -134,7 +140,7 @@ function Dashboard() {
         <StatCard
           title="Monthly Sales"
           value={`PKR ${stats.monthlySales.toLocaleString()}`}
-          icon="📈"
+          icon="MTH"
           color="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
           subtitle="This month"
           trend={{ value: 15, positive: true }}
@@ -142,7 +148,7 @@ function Dashboard() {
         <StatCard
           title="Low Stock Items"
           value={stats.lowStock}
-          icon="⚠️"
+          icon="LOW"
           color="bg-gradient-to-br from-red-50 to-red-100 border-red-200"
           subtitle="Need attention"
           trend={{ value: 5, positive: false }}
@@ -150,28 +156,28 @@ function Dashboard() {
         <StatCard
           title="Total Revenue"
           value={`PKR ${stats.totalRevenue.toLocaleString()}`}
-          icon="💎"
+          icon="REV"
           color="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200"
           subtitle="All time"
         />
         <StatCard
           title="Active Suppliers"
           value={stats.activeSuppliers}
-          icon="🏢"
+          icon="SUP"
           color="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200"
           subtitle="Supply partners"
         />
         <StatCard
           title="Active Customers"
           value={stats.activeCustomers}
-          icon="👥"
+          icon="CUST"
           color="bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200"
           subtitle="Customer base"
         />
         <StatCard
           title="System Health"
           value="98%"
-          icon="❤️"
+          icon="OK"
           color="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200"
           subtitle="Operational status"
         />
@@ -185,12 +191,11 @@ function Dashboard() {
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <span className="mr-2">💰</span>
+                <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 Recent Sales
               </h3>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                View All
-              </button>
             </div>
             <div className="space-y-4">
               {recentSales.length > 0 ? (
@@ -201,8 +206,10 @@ function Dashboard() {
                         <span className="text-green-600 font-semibold">S</span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Sale #{sale.id}</p>
-                        <p className="text-sm text-gray-600">{sale.sale_date}</p>
+                        <p className="font-medium text-gray-900">
+                          {sale.customer_name || 'Walk-in Customer'}
+                        </p>
+                        <p className="text-sm text-gray-600">Sale #{sale.id} � {sale.sale_date}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -226,12 +233,11 @@ function Dashboard() {
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <span className="mr-2">🛒</span>
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
                 Recent Purchases
               </h3>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                View All
-              </button>
             </div>
             <div className="space-y-4">
               {recentPurchases.length > 0 ? (
@@ -242,8 +248,10 @@ function Dashboard() {
                         <span className="text-blue-600 font-semibold">P</span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Purchase #{purchase.id}</p>
-                        <p className="text-sm text-gray-600">{purchase.purchase_date}</p>
+                        <p className="font-medium text-gray-900">
+                          {purchase.supplier_name || 'Unknown Supplier'}
+                        </p>
+                        <p className="text-sm text-gray-600">Purchase #{purchase.id} � {purchase.purchase_date}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -262,6 +270,85 @@ function Dashboard() {
               )}
             </div>
           </div>
+
+          {/* Top Customers */}
+          <div className="glass-card p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.206 0 4.304.534 6.121 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20v-1a4 4 0 00-4-4H9a4 4 0 00-4 4v1" />
+              </svg>
+              Top Customers
+            </h3>
+            <div className="space-y-3">
+              {topCustomers.length > 0 ? (
+                topCustomers.slice(0, 5).map((customer, index) => (
+                  <div key={customer.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                        index === 1 ? 'bg-gray-300 text-gray-800' :
+                        index === 2 ? 'bg-orange-300 text-orange-800' :
+                        'bg-gray-200 text-gray-700'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{customer.name}</p>
+                        <p className="text-xs text-gray-600">{Number(customer.orders || 0)} orders</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        PKR {Number(customer.revenue || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No customers available</p>
+              )}
+            </div>
+          </div>
+
+          {/* Top Suppliers */}
+          <div className="glass-card p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2h2a2 2 0 012 2m6 5a2 2 0 002 2h2a2 2 0 002-2v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+              Top Suppliers
+            </h3>
+            <div className="space-y-3">
+              {topSuppliers.length > 0 ? (
+                topSuppliers.slice(0, 5).map((supplier, index) => (
+                  <div key={supplier.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                        index === 1 ? 'bg-gray-300 text-gray-800' :
+                        index === 2 ? 'bg-orange-300 text-orange-800' :
+                        'bg-gray-200 text-gray-700'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{supplier.name}</p>
+                        <p className="text-xs text-gray-600">{Number(supplier.orders || 0)} purchases</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        PKR {Number(supplier.spend || 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No suppliers available</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions & Top Products */}
@@ -269,33 +356,81 @@ function Dashboard() {
           {/* Quick Actions */}
           <div className="glass-card p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">⚡</span>
+              <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
               Quick Actions
             </h3>
             <div className="space-y-3">
-              <button className="w-full btn-primary justify-start">
-                <span className="mr-2">➕</span>
-                Add New Product
+              <button
+                type="button"
+                onClick={() => navigate('/products')}
+                className="w-full btn-primary flex items-center justify-between"
+              >
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add New Product
+                </span>
+                <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
-              <button className="w-full btn-secondary justify-start">
-                <span className="mr-2">📦</span>
-                Record Sale
+              <button
+                type="button"
+                onClick={() => navigate('/sales')}
+                className="w-full btn-success flex items-center justify-between"
+              >
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Record Sale
+                </span>
+                <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
-              <button className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 justify-start flex">
-                <span className="mr-2">🛒</span>
-                New Purchase
+              <button
+                type="button"
+                onClick={() => navigate('/purchases')}
+                className="w-full btn-warning flex items-center justify-between"
+              >
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  New Purchase
+                </span>
+                <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
-              <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 justify-start flex">
-                <span className="mr-2">📊</span>
-                Generate Report
+              <button
+                type="button"
+                onClick={() => navigate('/reports')}
+                className="w-full btn-secondary flex items-center justify-between"
+              >
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6m-8 4h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Generate Report
+                </span>
+                <svg className="w-4 h-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
           </div>
-
           {/* Top Products */}
           <div className="glass-card p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">🏆</span>
+              <svg className="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12a8 8 0 11-16 0 8 8 0 0116 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3" />
+              </svg>
               Top Products
             </h3>
             <div className="space-y-3">
@@ -317,8 +452,12 @@ function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900">{product.stock_quantity}</p>
-                      <p className="text-xs text-gray-600">in stock</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        PKR {Number(product.revenue || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {Number(product.units_sold || 0).toLocaleString()} sold
+                      </p>
                     </div>
                   </div>
                 ))

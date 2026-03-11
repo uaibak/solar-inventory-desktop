@@ -179,7 +179,7 @@ function Reports() {
           { key: 'id', label: 'ID', sortable: true },
           { key: 'sale_date', label: 'Date', sortable: true },
           { key: 'customer_name', label: 'Customer', sortable: true },
-          { key: 'total_amount', label: 'Amount', sortable: true, format: (value) => `PKR ${value.toLocaleString()}` },
+          { key: 'total_amount', label: 'Amount', sortable: true, format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
           { key: 'payment_method', label: 'Payment', sortable: true },
         ];
       case 'purchases':
@@ -187,7 +187,7 @@ function Reports() {
           { key: 'id', label: 'ID', sortable: true },
           { key: 'purchase_date', label: 'Date', sortable: true },
           { key: 'supplier_name', label: 'Supplier', sortable: true },
-          { key: 'total_amount', label: 'Amount', sortable: true, format: (value) => `PKR ${value.toLocaleString()}` },
+          { key: 'total_amount', label: 'Amount', sortable: true, format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
           { key: 'status', label: 'Status', sortable: true },
         ];
       case 'inventory':
@@ -196,17 +196,17 @@ function Reports() {
           { key: 'name', label: 'Product', sortable: true },
           { key: 'category_name', label: 'Category', sortable: true },
           { key: 'stock_quantity', label: 'Stock', sortable: true },
-          { key: 'unit_price', label: 'Price', sortable: true, format: (value) => `PKR ${value.toLocaleString()}` },
+          { key: 'unit_price', label: 'Price', sortable: true, format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
           { key: 'supplier_name', label: 'Supplier', sortable: true },
         ];
       case 'financial':
         return [
-          { key: 'totalSales', label: 'Total Sales', format: (value) => `PKR ${value.toLocaleString()}` },
-          { key: 'totalPurchases', label: 'Total Purchases', format: (value) => `PKR ${value.toLocaleString()}` },
-          { key: 'netProfit', label: 'Net Profit', format: (value) => `PKR ${value.toLocaleString()}` },
+          { key: 'totalSales', label: 'Total Sales', format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
+          { key: 'totalPurchases', label: 'Total Purchases', format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
+          { key: 'netProfit', label: 'Net Profit', format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
           { key: 'salesCount', label: 'Sales Count' },
           { key: 'purchasesCount', label: 'Purchases Count' },
-          { key: 'averageSale', label: 'Avg Sale', format: (value) => `PKR ${value.toLocaleString()}` },
+          { key: 'averageSale', label: 'Avg Sale', format: (value) => `PKR ${Number(value || 0).toLocaleString()}` },
         ];
       default:
         return [];
@@ -354,8 +354,8 @@ function Reports() {
                 key.includes('Purchases') ? 'text-orange-600' : 'text-purple-600'
               }`}>
                 {(typeof value === 'number' && (key.includes('amount') || key.includes('Sale') || key.includes('Purchase') || key.includes('Profit')))
-                  ? `PKR ${value.toLocaleString()}`
-                  : value.toLocaleString()
+                  ? `PKR ${Number(value || 0).toLocaleString()}`
+                  : (value == null ? '-' : value.toLocaleString())
                 }
               </div>
               <div className="text-sm text-gray-600 capitalize">

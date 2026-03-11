@@ -34,7 +34,9 @@ router.get('/', authenticate, async (req, res) => {
       activeCustomersRow,
       recentSales,
       recentPurchases,
-      topProducts
+      topProducts,
+      topCustomers,
+      topSuppliers
     ] = await Promise.all([
       getSingle('SELECT COUNT(*) as count FROM products'),
       getSingle('SELECT COUNT(*) as count FROM products WHERE stock_quantity <= minimum_stock'),
@@ -44,16 +46,48 @@ router.get('/', authenticate, async (req, res) => {
       getSingle('SELECT COUNT(*) as count FROM suppliers'),
       getSingle('SELECT COUNT(*) as count FROM customers'),
       getAll(
-        'SELECT id, sale_date, total_amount FROM sales ORDER BY sale_date DESC, id DESC LIMIT 5'
+        `SELECT s.id, s.sale_date, s.total_amount, c.name as customer_name
+         FROM sales s
+         LEFT JOIN customers c ON s.customer_id = c.id
+         ORDER BY s.sale_date DESC, s.id DESC
+         LIMIT 5`
       ),
       getAll(
-        'SELECT id, purchase_date, total_amount FROM purchases ORDER BY purchase_date DESC, id DESC LIMIT 5'
+        `SELECT p.id, p.purchase_date, p.total_amount, s.name as supplier_name
+         FROM purchases p
+         LEFT JOIN suppliers s ON p.supplier_id = s.id
+         ORDER BY p.purchase_date DESC, p.id DESC
+         LIMIT 5`
       ),
       getAll(
-        `SELECT p.id, p.name, p.stock_quantity, c.name as category_name
+        `SELECT p.id, p.name, c.name as category_name,
+                COALESCE(SUM(si.quantity), 0) as units_sold,
+                COALESCE(SUM(si.subtotal), 0) as revenue
          FROM products p
+         LEFT JOIN sale_items si ON si.product_id = p.id
          LEFT JOIN categories c ON p.category_id = c.id
-         ORDER BY p.stock_quantity DESC, p.id DESC
+         GROUP BY p.id
+         ORDER BY revenue DESC, units_sold DESC, p.id DESC
+         LIMIT 5`
+      ),
+      getAll(
+        `SELECT c.id, c.name,
+                COALESCE(SUM(s.total_amount), 0) as revenue,
+                COALESCE(COUNT(s.id), 0) as orders
+         FROM customers c
+         LEFT JOIN sales s ON s.customer_id = c.id
+         GROUP BY c.id
+         ORDER BY revenue DESC, orders DESC, c.id DESC
+         LIMIT 5`
+      ),
+      getAll(
+        `SELECT s.id, s.name,
+                COALESCE(SUM(p.total_amount), 0) as spend,
+                COALESCE(COUNT(p.id), 0) as orders
+         FROM suppliers s
+         LEFT JOIN purchases p ON p.supplier_id = s.id
+         GROUP BY s.id
+         ORDER BY spend DESC, orders DESC, s.id DESC
          LIMIT 5`
       )
     ]);
@@ -70,7 +104,9 @@ router.get('/', authenticate, async (req, res) => {
       },
       recentSales,
       recentPurchases,
-      topProducts
+      topProducts,
+      topCustomers,
+      topSuppliers
     });
   } catch (err) {
     console.error('Dashboard error:', err);
