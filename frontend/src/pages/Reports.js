@@ -10,12 +10,12 @@ import Pagination from '../components/Pagination';
 function Reports() {
   const [activeTab, setActiveTab] = useState('sales');
   const [data, setData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exportModal, setExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState('csv');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
@@ -33,115 +33,47 @@ function Reports() {
   ];
   const searchPlaceholder = 'Search records...';
 
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [filters.search]);
+
   const fetchReportData = useCallback(async () => {
     setLoading(true);
     try {
-      let endpoint = '';
-      switch (activeTab) {
-        case 'sales':
-          endpoint = '/sales';
-          break;
-        case 'purchases':
-          endpoint = '/purchases';
-          break;
-        case 'inventory':
-          endpoint = '/products';
-          break;
-        case 'financial':
-          // For financial summary, we'll fetch multiple endpoints
-          const [salesRes, purchasesRes] = await Promise.all([
-            api.get('/sales'),
-            api.get('/purchases'),
-          ]);
-          const financialData = calculateFinancialSummary(salesRes.data, purchasesRes.data);
-          setData(financialData);
-          setLoading(false);
-          return;
-        default:
-          return;
-      }
+      const response = await api.get('/reports/list', {
+        params: {
+          type: activeTab,
+          page: currentPage,
+          pageSize: itemsPerPage,
+          search: debouncedSearch || undefined,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+          category: filters.category || undefined,
+          supplier: filters.supplier || undefined
+        }
+      });
 
-      const response = await api.get(endpoint);
-      setData(response.data);
+      setData(response.data.rows || []);
+      setTotalRecords(response.data.total || 0);
     } catch (err) {
       console.error('Error fetching report data:', err);
       error('Failed to load report data');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, error]);
-
-  const calculateFinancialSummary = (sales, purchases) => {
-    const summary = {
-      totalSales: sales.reduce((sum, sale) => sum + sale.total_amount, 0),
-      totalPurchases: purchases.reduce((sum, purchase) => sum + purchase.total_amount, 0),
-      netProfit: 0,
-      salesCount: sales.length,
-      purchasesCount: purchases.length,
-      averageSale: sales.length > 0 ? sales.reduce((sum, sale) => sum + sale.total_amount, 0) / sales.length : 0,
-      averagePurchase: purchases.length > 0 ? purchases.reduce((sum, purchase) => sum + purchase.total_amount, 0) / purchases.length : 0,
-    };
-    summary.netProfit = summary.totalSales - summary.totalPurchases;
-    return [summary];
-  };
-
-  const applyFilters = useCallback(() => {
-    let filtered = [...data];
-
-    // Date filtering
-    if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
-      filtered = filtered.filter(item => {
-        const itemDate = new Date(item.sale_date || item.purchase_date || item.created_at);
-        return itemDate >= fromDate;
-      });
-    }
-
-    if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(item => {
-        const itemDate = new Date(item.sale_date || item.purchase_date || item.created_at);
-        return itemDate <= toDate;
-      });
-    }
-
-    // Category filtering
-    if (filters.category) {
-      filtered = filtered.filter(item =>
-        item.category_name?.toLowerCase().includes(filters.category.toLowerCase()) ||
-        item.category?.toLowerCase().includes(filters.category.toLowerCase())
-      );
-    }
-
-    // Supplier filtering
-    if (filters.supplier) {
-      filtered = filtered.filter(item =>
-        item.supplier_name?.toLowerCase().includes(filters.supplier.toLowerCase()) ||
-        item.supplier?.toLowerCase().includes(filters.supplier.toLowerCase())
-      );
-    }
-
-    // Search filtering
-    if (filters.search) {
-      filtered = filtered.filter(item =>
-        Object.values(item).some(value =>
-          value && value.toString().toLowerCase().includes(filters.search.toLowerCase())
-        )
-      );
-    }
-
-    setFilteredData(filtered);
-    setCurrentPage(1);
-  }, [data, filters]);
+  }, [activeTab, currentPage, itemsPerPage, debouncedSearch, filters, error]);
 
   useEffect(() => {
     fetchReportData();
   }, [fetchReportData]);
 
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
+    setCurrentPage(1);
+  }, [activeTab, filters]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -149,7 +81,20 @@ function Reports() {
 
   const handleExport = async () => {
     try {
-      const exportData = filteredData.map(item => {
+      const exportResponse = await api.get('/reports/list', {
+        params: {
+          type: activeTab,
+          page: 1,
+          pageSize: 10000,
+          search: filters.search || undefined,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+          category: filters.category || undefined,
+          supplier: filters.supplier || undefined
+        }
+      });
+
+      const exportData = (exportResponse.data.rows || []).map(item => {
         const cleanItem = { ...item };
         // Remove any circular references or complex objects
         Object.keys(cleanItem).forEach(key => {
@@ -268,12 +213,8 @@ function Reports() {
     }
   };
 
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = data;
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
   if (loading) {
     return (
@@ -348,20 +289,20 @@ function Reports() {
       {activeTab !== 'financial' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="glass-card p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{filteredData.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{totalRecords}</div>
             <div className="text-sm text-gray-600">Total Records</div>
           </div>
           {activeTab === 'sales' && (
             <>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  PKR {filteredData.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
+                  PKR {data.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Total Revenue</div>
               </div>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  PKR {(filteredData.reduce((sum, item) => sum + item.total_amount, 0) / Math.max(filteredData.length, 1)).toLocaleString()}
+                  PKR {(data.reduce((sum, item) => sum + item.total_amount, 0) / Math.max(data.length, 1)).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Average Sale</div>
               </div>
@@ -371,13 +312,13 @@ function Reports() {
             <>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  PKR {filteredData.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
+                  PKR {data.reduce((sum, item) => sum + item.total_amount, 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Total Spent</div>
               </div>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-indigo-600">
-                  PKR {(filteredData.reduce((sum, item) => sum + item.total_amount, 0) / Math.max(filteredData.length, 1)).toLocaleString()}
+                  PKR {(data.reduce((sum, item) => sum + item.total_amount, 0) / Math.max(data.length, 1)).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Average Purchase</div>
               </div>
@@ -387,13 +328,13 @@ function Reports() {
             <>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {filteredData.reduce((sum, item) => sum + item.stock_quantity, 0).toLocaleString()}
+                  {data.reduce((sum, item) => sum + item.stock_quantity, 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Total Stock</div>
               </div>
               <div className="glass-card p-4 text-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {filteredData.filter(item => item.stock_quantity <= item.minimum_stock).length}
+                  {data.filter(item => item.stock_quantity <= item.minimum_stock).length}
                 </div>
                 <div className="text-sm text-gray-600">Low Stock Items</div>
               </div>
@@ -403,9 +344,9 @@ function Reports() {
       )}
 
       {/* Financial Summary Special Display */}
-      {activeTab === 'financial' && filteredData.length > 0 && (
+      {activeTab === 'financial' && data.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {Object.entries(filteredData[0]).map(([key, value]) => (
+          {Object.entries(data[0]).map(([key, value]) => (
             <div key={key} className="glass-card p-6 text-center">
               <div className={`text-3xl font-bold ${
                 key.includes('Profit') ? (value > 0 ? 'text-green-600' : 'text-red-600') :

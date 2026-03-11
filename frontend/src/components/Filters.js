@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export const SearchBar = ({
+export const SearchBar = React.memo(({
   placeholder = 'Search...',
   value,
   onChange,
@@ -36,9 +36,9 @@ export const SearchBar = ({
       )}
     </div>
   );
-};
+});
 
-export const FilterSelect = ({
+export const FilterSelect = React.memo(({
   label,
   value,
   onChange,
@@ -63,9 +63,9 @@ export const FilterSelect = ({
       </select>
     </div>
   );
-};
+});
 
-export const DateRangePicker = ({
+export const DateRangePicker = React.memo(({
   startDate,
   endDate,
   onStartDateChange,
@@ -94,7 +94,7 @@ export const DateRangePicker = ({
       </div>
     </div>
   );
-};
+});
 
 export const FilterBar = ({
   searchValue,

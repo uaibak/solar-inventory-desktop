@@ -61,16 +61,37 @@ ipcMain.handle('show-open-dialog', async (event, options) => {
 
 ipcMain.handle('print-to-pdf', async (event, content) => {
   try {
+    const html = content?.html || '';
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Save PDF',
-      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+      defaultPath: content?.defaultFileName || 'invoice.pdf'
     });
 
     if (!result.canceled) {
       const pdfPath = result.filePath;
-      // In a real implementation, you would generate PDF from content
-      // For now, just return success
-      return { success: true, path: pdfPath };
+      const pdfWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+      await pdfWindow.loadURL(dataUrl);
+      await pdfWindow.webContents.executeJavaScript('document.fonts && document.fonts.ready');
+
+      const pdfBuffer = await pdfWindow.webContents.printToPDF({
+        printBackground: true,
+        marginsType: 0
+      });
+
+      const safePath = pdfPath.endsWith('.pdf') ? pdfPath : `${pdfPath}.pdf`;
+      fs.writeFileSync(safePath, pdfBuffer);
+      pdfWindow.close();
+
+      return { success: true, path: safePath };
     }
     return { success: false };
   } catch (error) {

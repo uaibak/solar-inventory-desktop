@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import Modal from '../components/Modal';
+import { useToast } from '../components/Toast';
 
 function Sales() {
   const [sales, setSales] = useState([]);
@@ -7,12 +9,16 @@ function Sales() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
   const [saleItems, setSaleItems] = useState([]);
   const [formData, setFormData] = useState({
     customer_id: '',
     payment_method: 'cash',
     sale_date: new Date().toISOString().split('T')[0],
   });
+  const { error, success } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -103,8 +109,110 @@ function Sales() {
   };
 
   const printInvoice = (sale) => {
-    // For now, just show an alert. In a real app, this would generate and print an invoice
-    alert(`Printing invoice for Sale #${sale.id}`);
+    handleViewInvoice(sale);
+  };
+
+  const handleViewInvoice = async (sale) => {
+    setShowInvoice(true);
+    setInvoiceLoading(true);
+    try {
+      const response = await api.get(`/sales/${sale.id}`);
+      setInvoiceData(response.data);
+    } catch (err) {
+      console.error('Error loading invoice:', err);
+      error('Failed to load invoice');
+      setShowInvoice(false);
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const closeInvoice = () => {
+    setShowInvoice(false);
+    setInvoiceData(null);
+  };
+
+  const formatCurrency = (value) => `PKR ${Number(value || 0).toLocaleString()}`;
+
+  const buildInvoiceHtml = (sale) => {
+    const items = sale.items || [];
+    const rows = items.map(item => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${item.product_name || ''}</td>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${item.quantity}</td>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${formatCurrency(item.price)}</td>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">${formatCurrency(item.subtotal)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Invoice #${sale.id}</title>
+        </head>
+        <body style="font-family:Arial, sans-serif; margin:24px; color:#111827;">
+          <h2 style="margin:0 0 8px 0;">Invoice</h2>
+          <div style="margin-bottom:16px; font-size:14px; color:#374151;">
+            <div><strong>Invoice #</strong> ${sale.id}</div>
+            <div><strong>Date</strong> ${sale.sale_date}</div>
+            <div><strong>Payment</strong> ${sale.payment_method}</div>
+          </div>
+          <div style="margin-bottom:16px; font-size:14px; color:#374151;">
+            <strong>Customer</strong><br />
+            ${sale.customer_name || 'Walk-in Customer'}<br />
+            ${sale.customer_email || ''}<br />
+            ${sale.customer_phone || ''}<br />
+            ${sale.customer_address || ''}
+          </div>
+          <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:8px; border-bottom:2px solid #111827;">Item</th>
+                <th style="text-align:left; padding:8px; border-bottom:2px solid #111827;">Qty</th>
+                <th style="text-align:left; padding:8px; border-bottom:2px solid #111827;">Price</th>
+                <th style="text-align:right; padding:8px; border-bottom:2px solid #111827;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+          <div style="margin-top:16px; text-align:right; font-size:16px;">
+            <strong>Total: ${formatCurrency(sale.total_amount)}</strong>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const downloadInvoicePdf = async () => {
+    if (!invoiceData) return;
+    const html = buildInvoiceHtml(invoiceData);
+    const defaultFileName = `invoice-${invoiceData.id}.pdf`;
+
+    if (window.electronAPI?.printToPDF) {
+      const result = await window.electronAPI.printToPDF({
+        html,
+        defaultFileName
+      });
+      if (!result?.success) {
+        error(result?.error || 'Failed to generate PDF');
+      } else {
+        success('Invoice PDF saved');
+      }
+      return;
+    }
+
+    // Fallback for browser mode
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    }
   };
 
   if (loading) {
@@ -170,7 +278,7 @@ function Sales() {
                     onClick={() => printInvoice(sale)}
                     className="text-blue-600 hover:text-blue-900"
                   >
-                    Print Invoice
+                    View Invoice
                   </button>
                 </td>
               </tr>
@@ -312,6 +420,72 @@ function Sales() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={showInvoice}
+        onClose={closeInvoice}
+        title={`Invoice #${invoiceData?.id || ''}`}
+        size="lg"
+      >
+        {invoiceLoading && (
+          <div className="text-center py-8 text-gray-600">Loading invoice...</div>
+        )}
+
+        {!invoiceLoading && invoiceData && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Invoice Details</h3>
+                <p className="text-sm text-gray-600">Date: {invoiceData.sale_date}</p>
+                <p className="text-sm text-gray-600">Payment: {invoiceData.payment_method}</p>
+              </div>
+              <button
+                onClick={downloadInvoicePdf}
+                className="btn-primary"
+              >
+                Download PDF
+              </button>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
+              <div className="font-medium text-gray-900">Customer</div>
+              <div>{invoiceData.customer_name || 'Walk-in Customer'}</div>
+              {invoiceData.customer_email && <div>{invoiceData.customer_email}</div>}
+              {invoiceData.customer_phone && <div>{invoiceData.customer_phone}</div>}
+              {invoiceData.customer_address && <div>{invoiceData.customer_address}</div>}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(invoiceData.items || []).map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-2 text-sm text-gray-900">{item.product_name}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">{item.quantity}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">{formatCurrency(item.price)}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatCurrency(item.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end">
+              <div className="text-lg font-semibold text-gray-900">
+                Total: {formatCurrency(invoiceData.total_amount)}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

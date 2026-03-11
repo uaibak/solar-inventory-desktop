@@ -24,8 +24,19 @@ class Database {
         console.error('Error opening database:', err.message);
       } else {
         console.log('Connected to SQLite database.');
+        this.applyPragmas();
         this.createTables();
       }
+    });
+  }
+
+  applyPragmas() {
+    // Pragmas for better performance on local desktop workloads
+    this.db.serialize(() => {
+      this.db.run('PRAGMA foreign_keys = ON');
+      this.db.run('PRAGMA journal_mode = WAL');
+      this.db.run('PRAGMA synchronous = NORMAL');
+      this.db.run('PRAGMA temp_store = MEMORY');
     });
   }
 
@@ -155,7 +166,37 @@ class Database {
         }
         completed++;
         if (completed === total) {
-          this.seedInitialData();
+          this.createIndexes(() => {
+            this.seedInitialData();
+          });
+        }
+      });
+    });
+  }
+
+  createIndexes(callback) {
+    const indexes = [
+      'CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)',
+      'CREATE INDEX IF NOT EXISTS idx_products_supplier_id ON products(supplier_id)',
+      'CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)',
+      'CREATE INDEX IF NOT EXISTS idx_sales_sale_date ON sales(sale_date)',
+      'CREATE INDEX IF NOT EXISTS idx_sales_customer_id ON sales(customer_id)',
+      'CREATE INDEX IF NOT EXISTS idx_purchases_purchase_date ON purchases(purchase_date)',
+      'CREATE INDEX IF NOT EXISTS idx_purchases_supplier_id ON purchases(supplier_id)',
+      'CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id ON sale_items(sale_id)',
+      'CREATE INDEX IF NOT EXISTS idx_purchase_items_purchase_id ON purchase_items(purchase_id)'
+    ];
+
+    let completed = 0;
+    const total = indexes.length;
+    indexes.forEach(sql => {
+      this.db.run(sql, (err) => {
+        if (err) {
+          console.error('Error creating index:', err.message);
+        }
+        completed++;
+        if (completed === total) {
+          callback();
         }
       });
     });

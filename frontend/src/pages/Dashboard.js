@@ -21,59 +21,13 @@ function Dashboard() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [
-        productsRes,
-        salesRes,
-        purchasesRes,
-        suppliersRes,
-        customersRes
-      ] = await Promise.all([
-        api.get('/products'),
-        api.get('/sales'),
-        api.get('/purchases'),
-        api.get('/suppliers'),
-        api.get('/customers'),
-      ]);
+      const response = await api.get('/dashboard');
+      const { stats, recentSales, recentPurchases, topProducts } = response.data;
 
-      const products = productsRes.data;
-      const sales = salesRes.data;
-      const purchases = purchasesRes.data;
-      const suppliers = suppliersRes.data;
-      const customers = customersRes.data;
-
-      // Calculate comprehensive stats
-      const totalProducts = products.length;
-      const today = new Date().toISOString().split('T')[0];
-      const thisMonth = new Date().toISOString().slice(0, 7);
-
-      const todaySales = sales
-        .filter(sale => sale.sale_date === today)
-        .reduce((sum, sale) => sum + sale.total_amount, 0);
-
-      const monthlySales = sales
-        .filter(sale => sale.sale_date.startsWith(thisMonth))
-        .reduce((sum, sale) => sum + sale.total_amount, 0);
-
-      const totalRevenue = sales.reduce((sum, sale) => sum + sale.total_amount, 0);
-
-      const lowStock = products.filter(product => product.stock_quantity <= product.minimum_stock).length;
-
-      const activeSuppliers = suppliers.length;
-      const activeCustomers = customers.length;
-
-      setStats({
-        totalProducts,
-        todaySales,
-        monthlySales,
-        lowStock,
-        totalRevenue,
-        activeSuppliers,
-        activeCustomers,
-      });
-
-      setRecentSales(sales.slice(0, 5));
-      setRecentPurchases(purchases.slice(0, 5));
-      setTopProducts(products.slice(0, 5)); // Placeholder for top products
+      setStats(stats);
+      setRecentSales(recentSales || []);
+      setRecentPurchases(recentPurchases || []);
+      setTopProducts(topProducts || []);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       error('Failed to load dashboard data');
