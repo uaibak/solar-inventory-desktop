@@ -216,16 +216,20 @@ class Database {
     const shouldSeedSampleData =
       process.env.SEED_SAMPLE_DATA === 'true' ||
       (!isPackaged && process.env.NODE_ENV !== 'production');
+    const shouldSeedAdmin =
+      process.env.SEED_ADMIN === 'true';
     
     // Check if admin user already exists
-    this.db.get('SELECT COUNT(*) as count FROM users WHERE email = ?', ['admin@solarinventory.com'], (err, row) => {
-      if (!err && row.count === 0) {
-        this.db.run(
-          `INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)`,
-          ['Admin User', 'admin@solarinventory.com', hashedPassword, 'admin']
-        );
-      }
-    });
+    if (shouldSeedAdmin) {
+      this.db.get('SELECT COUNT(*) as count FROM users WHERE email = ?', ['admin@solarinventory.com'], (err, row) => {
+        if (!err && row.count === 0) {
+          this.db.run(
+            `INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)`,
+            ['Admin User', 'admin@solarinventory.com', hashedPassword, 'admin']
+          );
+        }
+      });
+    }
 
     if (!shouldSeedSampleData) {
       return;

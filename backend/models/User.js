@@ -69,6 +69,22 @@ class User {
     });
   }
 
+  static countUsers() {
+    return new Promise((resolve, reject) => {
+      db.getDb().get(
+        `SELECT COUNT(*) as count FROM users`,
+        [],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row?.count || 0);
+          }
+        }
+      );
+    });
+  }
+
   static update(id, userData) {
     return new Promise((resolve, reject) => {
       const { name, email, role } = userData;

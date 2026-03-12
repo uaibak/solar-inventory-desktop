@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
+import api from '../services/api';
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('general');
@@ -100,15 +101,17 @@ function Settings() {
       return;
     }
 
-    if (settings.newPassword.length < 8) {
-      error('Password must be at least 8 characters long');
+    if (settings.newPassword.length < 6) {
+      error('Password must be at least 6 characters long');
       return;
     }
 
     setLoading(true);
     try {
-      // In real app, this would be API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.post('/auth/change-password', {
+        currentPassword: settings.currentPassword,
+        newPassword: settings.newPassword
+      });
       success('Password changed successfully');
       setShowPasswordModal(false);
       setSettings(prev => ({

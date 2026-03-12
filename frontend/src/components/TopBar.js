@@ -1,9 +1,11 @@
 import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 
 function TopBar() {
   const { user, logout } = useContext(AuthContext);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -12,7 +14,7 @@ function TopBar() {
   };
 
   return (
-    <header className="bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm bg-opacity-95">
+    <header className="relative z-50 bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm bg-opacity-95">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Breadcrumb/Title */}
@@ -71,7 +73,7 @@ function TopBar() {
 
               {/* Dropdown menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 animate-slide-in">
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[60] animate-slide-in">
                   <div className="px-4 py-2 border-b border-gray-200">
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
@@ -79,7 +81,10 @@ function TopBar() {
 
                   <button
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2"
-                    onClick={() => {/* Profile settings */}}
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/settings');
+                    }}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -89,7 +94,10 @@ function TopBar() {
 
                   <button
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2"
-                    onClick={() => {/* Change password */}}
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/settings');
+                    }}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />

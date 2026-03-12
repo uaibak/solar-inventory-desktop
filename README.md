@@ -98,8 +98,7 @@ Output goes to `dist/`.
 - Dev DB file: `data/inventory.db`
 - Production DB file: Electron userData directory (OS-specific)
 
-The database is auto-created and seeded on first run.
-In packaged (dist) builds, sample data seeding is disabled by default to keep the database empty.
+The database is auto-created on first run. In packaged (dist) builds, no users or sample data are seeded, so the app starts with an empty database and prompts for admin registration.
 Set SEED_SAMPLE_DATA=true to enable sample data seeding if you want it.
 
 ## API Overview

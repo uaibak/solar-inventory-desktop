@@ -79,9 +79,6 @@ function Login() {
             </button>
           </div>
 
-          <div className="text-center text-sm text-gray-600">
-            Default credentials: admin@solarinventory.com / admin123
-          </div>
         </form>
       </div>
     </div>

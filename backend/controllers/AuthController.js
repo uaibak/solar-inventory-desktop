@@ -10,6 +10,12 @@ class AuthController {
     body('password').notEmpty()
   ];
 
+  static validateRegister = [
+    body('name').notEmpty().trim(),
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 })
+  ];
+
   static async login(req, res) {
     try {
       const errors = validationResult(req);
@@ -47,6 +53,50 @@ class AuthController {
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async bootstrapStatus(req, res) {
+    try {
+      const count = await User.countUsers();
+      res.json({ hasUsers: count > 0 });
+    } catch (error) {
+      console.error('Bootstrap status error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async registerAdmin(req, res) {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const count = await User.countUsers();
+      if (count > 0) {
+        return res.status(409).json({ error: 'Admin already exists' });
+      }
+
+      const { name, email, password } = req.body;
+      const user = await User.create({ name, email, password, role: 'admin' });
+
+      res.status(201).json({
+        message: 'Admin account created',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: 'admin'
+        }
+      });
+    } catch (error) {
+      console.error('Register admin error:', error);
+      if (error.code === 'SQLITE_CONSTRAINT') {
+        res.status(400).json({ error: 'Email already exists' });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   }
 
