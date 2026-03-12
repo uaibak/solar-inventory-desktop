@@ -1,28 +1,19 @@
 # Solar Inventory Desktop
 
-A full-stack desktop inventory management system for a solar equipment store. It tracks products, categories, suppliers, customers, purchases, and sales with a modern React UI, local SQLite storage, and a bundled Electron shell.
+A standalone desktop inventory management system for solar equipment stores. It runs fully offline on a single machine with an embedded backend and a local SQLite database.
 
-## What This System Does
-- Manage inventory items and categories
-- Track purchases and supplier spend
-- Track sales, customers, and revenue
-- Generate reports with filters and CSV export
-- View dashboard KPIs with recent activity and top lists
-- Generate invoice PDF from sales (Electron)
+## Overview
+This app manages products, categories, suppliers, customers, purchases, and sales. It includes reports, dashboard analytics, and invoice PDF generation.
 
 ## Key Features
-- Desktop app (Electron) + local API (Express)
-- Local SQLite database with auto-create and seed
-- JWT authentication with role-based access
-- Dashboard summary with:
-  - Total products, sales, revenue, low stock
-  - Recent sales and purchases
-  - Top products (by revenue + units sold)
-  - Top customers (by sales revenue)
-  - Top suppliers (by purchase spend)
-- Reports with search, date filters, pagination, and export
-- CSV export uses ISO dates to parse cleanly in Excel
-- Invoice view and PDF download (Electron only)
+- Standalone Electron desktop app (no external server required)
+- Embedded Express API + local SQLite database
+- First-run admin registration when the database is empty
+- Inventory, purchases, sales, suppliers, customers, categories
+- Reports with filters, pagination, and CSV export
+- Dashboard KPIs with recent activity and top products/customers/suppliers
+- Invoice view + PDF export (Electron only)
+- Offline-first, local data storage
 
 ## Tech Stack
 - Frontend: React 18, React Router, TailwindCSS, Chart.js
@@ -41,16 +32,16 @@ solar-inventory-desktop/
 |-- backend/            # Express API
 |   |-- routes/         # API routes
 |   |-- models/         # Data access
-|   |-- database/       # SQLite setup + seed
+|   |-- database/       # SQLite setup
 |-- data/               # Dev database (created at runtime)
 |-- package.json
 ```
 
-## Prerequisites
+## Prerequisites (for development)
 - Node.js 18+ recommended
 - npm
 
-## Install
+## Install (development)
 From repo root:
 ```bash
 npm install
@@ -64,47 +55,40 @@ npm install
 cd ..
 ```
 
-## Run (Development)
+## Run (development)
 ```bash
 npm run dev
 ```
-This starts:
+Starts:
 - Backend API: `http://localhost:3001`
 - Frontend UI: `http://localhost:3000`
 - Electron app (loads the frontend dev server)
 
-## Run (Production)
+## Build & Package (standalone desktop app)
 ```bash
-npm start
-```
-Runs Electron directly. In production, build the frontend first.
+cd frontend
+npm run build
+cd ..
 
-## Build & Package
-```bash
-npm run build:frontend
-npm run build:electron
-```
-Or all-in-one:
-```bash
 npm run dist
 ```
-Output goes to `dist/`.
+Installer output goes to `dist/`.
 
-## Default Login
-- Email: `admin@solarinventory.com`
-- Password: `admin123`
+## First-Run Admin Setup
+When the database has no users, the app opens a one-time **Admin Registration** screen. After creating the admin, you will be redirected to the login screen.
 
 ## Database
 - Dev DB file: `data/inventory.db`
-- Production DB file: Electron userData directory (OS-specific)
+- Packaged DB file: Electron `userData` directory (OS-specific)
 
-The database is auto-created on first run. In packaged (dist) builds, no users or sample data are seeded, so the app starts with an empty database and prompts for admin registration.
-Set SEED_SAMPLE_DATA=true to enable sample data seeding if you want it.
+On packaged builds, the database starts empty by default. Use `SEED_SAMPLE_DATA=true` only if you want demo data.
 
 ## API Overview
 Base URL: `http://localhost:3001/api`
 
 Auth:
+- `GET /auth/bootstrap`
+- `POST /auth/register-admin`
 - `POST /auth/login`
 - `GET /auth/profile`
 - `POST /auth/change-password`
@@ -141,16 +125,12 @@ Database tools (admin only):
 See `SAMPLE_DATA.md` for example CSV and datasets used for testing.
 
 ## PDF Invoices
-Invoice PDF download uses Electron’s `printToPDF` API. It will not work in a plain browser tab. Use the Electron app for PDF export.
-
-## Performance Notes
-- SQLite is configured with WAL mode and indexes for dashboard and reports.
-- Reports list is server-side paginated for fast filtering and export.
+Invoice PDF download uses Electron’s `printToPDF` API and only works inside the Electron app.
 
 ## Troubleshooting
-- Port conflicts: ensure `3000` and `3001` are free.
-- If the DB is corrupted, delete `data/inventory.db` and restart.
-- PDF export requires Electron; browser mode won’t download.
+- Port conflicts (dev): ensure `3000` and `3001` are free.
+- If the DB is corrupted, delete `data/inventory.db` (dev) or the packaged app DB in userData.
+- Blank screen in Electron usually means the frontend build was not included. Rebuild with `npm run build` then `npm run dist`.
 
 ## License
 Boost Software License 1.0. See `LICENSE`.

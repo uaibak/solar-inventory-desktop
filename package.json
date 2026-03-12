@@ -32,7 +32,8 @@
                                 "backend/**/*",
                                 "frontend/build/**/*",
                                 "node_modules/**/*",
-                                "assets/icon/**/*"
+                                "assets/icon/**/*",
+                                "!data/**"
                             ],
                   "win":  {
                               "target":  "nsis",
