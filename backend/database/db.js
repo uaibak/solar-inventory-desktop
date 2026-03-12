@@ -206,6 +206,16 @@ class Database {
     // Create default admin user (only if no users exist)
     const bcrypt = require('bcryptjs');
     const hashedPassword = bcrypt.hashSync('admin123', 10);
+    let isPackaged = false;
+    try {
+      const electron = require('electron');
+      isPackaged = Boolean(electron?.app?.isPackaged);
+    } catch (err) {
+      isPackaged = false;
+    }
+    const shouldSeedSampleData =
+      process.env.SEED_SAMPLE_DATA === 'true' ||
+      (!isPackaged && process.env.NODE_ENV !== 'production');
     
     // Check if admin user already exists
     this.db.get('SELECT COUNT(*) as count FROM users WHERE email = ?', ['admin@solarinventory.com'], (err, row) => {
@@ -216,6 +226,10 @@ class Database {
         );
       }
     });
+
+    if (!shouldSeedSampleData) {
+      return;
+    }
 
     // Create default categories (only if no categories exist)
     this.db.get('SELECT COUNT(*) as count FROM categories', (err, row) => {

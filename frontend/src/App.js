@@ -1,5 +1,5 @@
 import React, { useContext, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { PageLoading } from './components/Loading';
@@ -18,6 +18,9 @@ const Reports = lazy(() => import('./pages/Reports'));
 
 function AppContent() {
   const { user, loading } = useContext(AuthContext);
+  const isFileProtocol =
+    typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+  const Router = isFileProtocol ? HashRouter : BrowserRouter;
 
   if (loading) {
     return <PageLoading message="Initializing application..." />;

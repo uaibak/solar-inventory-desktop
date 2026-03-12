@@ -99,6 +99,8 @@ Output goes to `dist/`.
 - Production DB file: Electron userData directory (OS-specific)
 
 The database is auto-created and seeded on first run.
+In packaged (dist) builds, sample data seeding is disabled by default to keep the database empty.
+Set SEED_SAMPLE_DATA=true to enable sample data seeding if you want it.
 
 ## API Overview
 Base URL: `http://localhost:3001/api`

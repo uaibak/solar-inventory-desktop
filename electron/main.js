@@ -9,8 +9,24 @@ app.commandLine.appendSwitch('--disable-dev-shm-usage');
 app.commandLine.appendSwitch('--disable-software-rasterizer');
 
 let mainWindow;
+let backendServer;
+
+function startBackend() {
+  if (backendServer) {
+    return;
+  }
+  try {
+    const backendPath = path.join(__dirname, '..', 'backend', 'server');
+    const backend = require(backendPath);
+    backendServer = backend?.server || backend;
+    console.log('Backend server started');
+  } catch (err) {
+    console.error('Failed to start backend server:', err);
+  }
+}
 
 function createWindow() {
+  const isDev = !app.isPackaged;
   // Create the browser window with basic configuration
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -29,7 +45,60 @@ function createWindow() {
   });
 
   // Load the React app
-  mainWindow.loadURL('http://localhost:3000');
+  const appPath = app.getAppPath();
+  const indexPath = app.isPackaged
+    ? path.join(appPath, 'frontend', 'build', 'index.html')
+    : path.join(__dirname, '..', 'frontend', 'build', 'index.html');
+  const devUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+  const hasBuild = fs.existsSync(indexPath);
+
+  if (app.isPackaged || process.env.ELECTRON_START_BACKEND === 'true') {
+    startBackend();
+  }
+
+  if (app.isPackaged) {
+    mainWindow.loadFile(indexPath);
+  } else if (process.env.ELECTRON_START_URL) {
+    mainWindow.loadURL(devUrl);
+  } else if (hasBuild) {
+    mainWindow.loadFile(indexPath);
+  } else {
+    mainWindow.loadURL(devUrl);
+  }
+
+  const showLoadError = (details) => {
+    const contextNote = app.isPackaged
+      ? `The packaged build could not find ${indexPath}. Rebuild the app so frontend/build is included.`
+      : `In development, ensure the React dev server is running on ${devUrl}.`;
+    const html = `
+      <html>
+        <head><meta charset="utf-8" /><title>App Load Error</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 24px; color: #1f2937;">
+          <h2>App failed to load</h2>
+          <p>${details || 'Unable to load the app content.'}</p>
+          <p>${contextNote}</p>
+        </body>
+      </html>`;
+    mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  };
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('did-fail-load', { errorCode, errorDescription, validatedURL });
+    if (!app.isPackaged && hasBuild) {
+      mainWindow.loadFile(indexPath);
+      return;
+    }
+    showLoadError(`${errorDescription} (code ${errorCode})`);
+  });
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('render-process-gone', details);
+    showLoadError('Renderer crashed. Please restart the app.');
+  });
+
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[Renderer:${level}] ${message} (${sourceId}:${line})`);
+  });
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
@@ -37,7 +106,7 @@ function createWindow() {
   });
 
   // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
+  if (isDev || process.env.ELECTRON_DEBUG === 'true') {
     mainWindow.webContents.openDevTools();
   }
 
@@ -128,4 +197,7 @@ app.on('activate', () => {
 // Handle app events
 app.on('before-quit', () => {
   // Clean up any processes if needed
+  if (backendServer && typeof backendServer.close === 'function') {
+    backendServer.close();
+  }
 });
