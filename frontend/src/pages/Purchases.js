@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
 
 function Purchases() {
   const [purchases, setPurchases] = useState([]);
@@ -12,6 +13,7 @@ function Purchases() {
     supplier_id: '',
     purchase_date: new Date().toISOString().split('T')[0],
   });
+  const { success, error } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -76,11 +78,13 @@ function Purchases() {
       };
 
       await api.post('/purchases', purchaseData);
-      fetchData();
+      await fetchData();
       setShowForm(false);
       resetForm();
+      success('Purchase created successfully');
     } catch (error) {
       console.error('Error creating purchase:', error);
+      error('Failed to create purchase');
     }
   };
 

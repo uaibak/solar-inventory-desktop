@@ -127,40 +127,52 @@ class Product {
     });
   }
 
-  static updateStock(id, quantity, movementType, referenceType = null, referenceId = null) {
+  static updateStock(id, quantity, movementType, referenceType = null, referenceId = null, options = {}) {
     return new Promise((resolve, reject) => {
-      db.getDb().serialize(() => {
-        db.getDb().run('BEGIN TRANSACTION');
-        
-        // Update product stock
+      const useTransaction = options.useTransaction !== false;
+      const runUpdate = () => {
         const sql = movementType === 'in' 
           ? `UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?`
           : `UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?`;
-        
+
         db.getDb().run(sql, [quantity, id], (err) => {
           if (err) {
-            db.getDb().run('ROLLBACK');
+            if (useTransaction) {
+              db.getDb().run('ROLLBACK');
+            }
             reject(err);
             return;
           }
-          
-          // Record stock movement
+
           db.getDb().run(
             `INSERT INTO stock_movements (product_id, movement_type, quantity, reference_type, reference_id) 
              VALUES (?, ?, ?, ?, ?)`,
             [id, movementType, quantity, referenceType, referenceId],
             (err) => {
               if (err) {
-                db.getDb().run('ROLLBACK');
+                if (useTransaction) {
+                  db.getDb().run('ROLLBACK');
+                }
                 reject(err);
               } else {
-                db.getDb().run('COMMIT');
+                if (useTransaction) {
+                  db.getDb().run('COMMIT');
+                }
                 resolve();
               }
             }
           );
         });
-      });
+      };
+
+      if (useTransaction) {
+        db.getDb().serialize(() => {
+          db.getDb().run('BEGIN TRANSACTION');
+          runUpdate();
+        });
+      } else {
+        runUpdate();
+      }
     });
   }
 

@@ -86,11 +86,13 @@ function Sales() {
       };
 
       await api.post('/sales', saleData);
-      fetchData();
+      await fetchData();
       setShowForm(false);
       resetForm();
+      success('Sale created successfully');
     } catch (error) {
       console.error('Error creating sale:', error);
+      error('Failed to create sale');
     }
   };
 

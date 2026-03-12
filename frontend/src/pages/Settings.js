@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import api from '../services/api';
@@ -52,11 +52,7 @@ function Settings() {
     { id: 'backup', label: 'Backup', icon: '💾' },
   ];
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       // In a real app, this would load from API
       // For now, we'll use localStorage or default values
@@ -67,7 +63,11 @@ function Settings() {
     } catch (err) {
       console.error('Error loading settings:', err);
     }
-  };
+  }, [settings]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const saveSettings = async (newSettings) => {
     setLoading(true);

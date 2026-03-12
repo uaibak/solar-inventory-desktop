@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 export const AuthContext = createContext();
@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
 
-  useEffect(() => {
+  const initAuth = useCallback(() => {
     let isMounted = true;
 
     const finalize = () => {
@@ -81,7 +81,12 @@ export const AuthProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [needsSetup]);
+
+  useEffect(() => {
+    const cleanup = initAuth();
+    return cleanup;
+  }, [initAuth]);
 
   const login = async (email, password) => {
     try {

@@ -46,7 +46,7 @@ class Purchase {
                   
                   // Update product stock
                   try {
-                    await Product.updateStock(item.product_id, item.quantity, 'in', 'purchase', purchaseId);
+                    await Product.updateStock(item.product_id, item.quantity, 'in', 'purchase', purchaseId, { useTransaction: false });
                   } catch (stockErr) {
                     db.getDb().run('ROLLBACK');
                     reject(stockErr);
